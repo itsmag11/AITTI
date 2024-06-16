@@ -148,7 +148,7 @@
             <p>
               The main goal of this paper is to devise a bias mitigation method for biased concepts
               An ideal inclusive T2I model yields results with evenly distributed sensitive attributes across all attribute classes, <i>e.g.</i>, 50% male and 50% female in gender, when no attribute-related instructions are provided. A crucial aspect of a fair model is its ability to generate inclusive outcomes without direct instruction regarding the target attribute class. Besides, users' unawareness of potential biases related to a target concept should be respected.
-
+            <p>
               Therefore, we argue that a good de-biasing algorithm should:
              <ol>
               <li>Achieve fairer results without explicit specification of the target attribute class during generation.</li>
@@ -172,16 +172,22 @@
       <h2 class="title is-3">Quantitative Results</h2>
       <div class="level-set has-text-justified">
         <p>
-          We propose the task of <it>Pre-Fine-Tuning Weight Recovery</it>. In this paper, we tackle this task in cases where multiple LoRA fine-tuned flavors of the same source model are available.
-          To solve this task we present <em>Spectral DeTuning</em>, a method that recovers Pre-FT weights of SoTA models using iterative low-rank matrix factorization
+          Comparisons with baseline methods on fairness, quality, and text alignment of generative results across three bias attributes. 
+          Abbreviations are used for simplicity: <strong>SD1.5</strong>: Stable Diffusion v1.5. 
+          <strong>TIME</strong>: time diffusion. 
+          <strong>FD</strong>: fair diffusion. 
+          <strong>EI</strong>: ethical intervention. 
+          <strong>FM</strong>: fair mapping. 
+          <strong>TI</strong>: revised textual inversion. <i>*</i> indicates editing-based methods that require careful tuning of editing strengths to achieve reasonable results. 
+          The best KL Divergency results in each category are marked by <strong>bold</strong>. 
           </p>
        <p>
         Unlike previous attacks on model alignment that attempt to recover Pre-FT capabilities, we aim to recover the exact Pre-FT weights.<br>
         Moreover, it does not require running inference through the model. This is advantageous as i) it does not require training data ii) it is highly parallelizable, e.g., on a cluster of desktop GPUs such as RTX2080 our method can recover the Pre-FT weights of a Mistral-7B model in under five minutes.
        </p>
      </div>
-     <img src="static/images/tab1.png" alt="Recovering the Pre-Fine-Tuning Weight of an Aligned Mistral 7B" class="blend-img-background center-image"/>
-          <p><strong>Stable Diffusion Results:</strong> Spectral DeTuning recovers the Pre-Fine-Tuning images with high precision, even when using "in the wild" LoRAs, essentially reversing the personalization fine-tuning of the LoRA model.
+     <img src="static/images/tab1.png" alt="" class="blend-img-background center-image"/>
+          <p><i>Citation IDs follow the ones in our arXiv paper.</i>
       </div>
    </div>
  </div>
