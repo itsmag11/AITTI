@@ -146,16 +146,18 @@
         <div class="content">
           <div class="level-set has-text-justified">
             <p>
-             In this paper, we identify a vulnerability in fine-tuned models, wherein the pre-fine-tuning (Pre-FT) weights, i.e., the model weights before the fine-tuning stage, can be recovered using a small number of models fine-tuned via low-rank adaptation (LoRA).
-             Generative modeling consists of two steps:
+              The main goal of this paper is to devise a bias mitigation method for biased concepts
+              An ideal inclusive T2I model yields results with evenly distributed sensitive attributes across all attribute classes, <i>e.g.</i>, 50% male and 50% female in gender, when no attribute-related instructions are provided. A crucial aspect of a fair model is its ability to generate inclusive outcomes without direct instruction regarding the target attribute class. Besides, users' unawareness of potential biases related to a target concept should be respected.
+
+              Therefore, we argue that a good de-biasing algorithm should:
              <ol>
-              <li>Pre-training on unsafe data.</li>
-              <li>Alignment and safety fine-tuning.</li>
+              <li>Achieve fairer results without explicit specification of the target attribute class during generation.</li>
+              <li>Require no prior knowledge of the original bias distribution associated with the concept (<i>e.g.</i>, the doctor concept is stereotypically biased towards males).</li>
             </ol>
             Recovering the original pre-fine-tuning unsafe weights, is implicitly assumed to be impossible. We demonstrate that this safety assumption is often false.
           </p>
         </div>
-          <img src="static/images/framework.png" alt="Framework of our proposed adaptive inclusive token for text-to-image generation. The blue color indicates frozen weights, and the green color indicates trainable weights. \textbf{Left}: single training stage. \textbf{Right}: details of text model with adaptive mapping network. The adaptive inclusive token is concept-specific. $TokenIDs$ are for illustration only." class="blend-img-background center-image"/>
+          <img src="static/images/framework.png" alt="" class="blend-img-background center-image"/>
           <p>Framework of our proposed adaptive inclusive token for text-to-image generation. The blue color indicates frozen weights, and the green color indicates trainable weights. <strong>Left</strong>: single training stage. <strong>Right</strong>: details of text model with adaptive mapping network. The adaptive inclusive token is concept-specific. <i>TokenIDs</i> are for illustration only.
         </div>
         
