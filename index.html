@@ -43,6 +43,71 @@
   <script src="static/js/bulma-carousel.min.js"></script>
   <script src="static/js/bulma-slider.min.js"></script>
   <script src="static/js/index.js"></script>
+
+  <style>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+    }
+    th, td {
+        border: 1px solid black;
+        padding: 10px;
+        text-align: center;
+    }
+    th {
+        background-color: #dcdcdc; /* Light gray for main header */
+    }
+    .section-header {
+        background-color: #dcdcdc; /* Darker gray for section header */
+    }
+    td, th {
+        border-left: none;
+        border-right: none;
+    }
+    .section-title {
+        text-align: center;
+        font-weight: bold;
+        background-color: #dcdcdc; /* Darker gray for section title */
+    }
+    .main-header th, .header-row th {
+        text-align: center; /* Center align text for main headers and header rows */
+    }
+    .centered {
+        text-align: center;
+        vertical-align: middle
+    }
+    .smallTable {  /* Target table with class "myTable" */
+      width: 60%;  /* Set width to 60% */
+      border-collapse: collapse;
+      margin: 20px 0;
+      text-align: center;
+      vertical-align: middle;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .smallTable2 {  /* Target table with class "myTable" */
+      width: 80%;  /* Set width to 60% */
+      border-collapse: collapse;
+      margin: 20px 0;
+      text-align: center;
+      vertical-align: middle;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .limited-width-image {
+      max-width: 80%;
+      width: 1000px;  /* Adjust this value to your desired maximum width */
+    }
+    .center-image {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .reduce-top-margin {
+      margin-top: -70px; /* Adjust this value as needed */
+    }
+</style>
 </head>
 <body>
 
@@ -124,30 +189,27 @@
 </section>
   
 <!-- Image carousel -->
-<section class="hero is-small">
+<section class="hero is-small reduce-top-margin">
   <div class="hero-body">
     <div class="container">
       <div id="results-carousel" class="carousel results-carousel">
        <div class="item">
-        <!-- Your image here -->
-        <img src="static/images/sdxl-gender.jpg" alt="MY ALT TEXT"/>
-        <h2 class="subtitle has-text-centered">
-          Qualitative evaluation on gender bias mitigation using SDXL. Each column is generated with the same noise latent. The captions above indicate the base prompt <i>T(c)</i>.
-        </h2>
+        <img src="static/images/sdxl-gender.jpg" alt="MY ALT TEXT" class="limited-width-image center-image"/>
+        <h3 class="subtitle has-text-centered" style="font-size: 16px;">
+          Qualitative evaluation on gender bias mitigation using SDXL. Each column is generated with the same noise latent. <br> The captions above indicate the base prompt <i>T(c)</i>.
+        </h3>
       </div>
       <div class="item">
-        <!-- Your image here -->
-        <img src="static/images/sdxl-race.jpg" alt="MY ALT TEXT"/>
-        <h2 class="subtitle has-text-centered">
-          Qualitative evaluation on race bias mitigation using SDXL. Each column is generated with the same noise latent. The captions above indicate the base prompt <i>T(c)</i>.
-       </h2>
+        <img src="static/images/sdxl-race.jpg" alt="MY ALT TEXT" class="limited-width-image center-image"/>
+        <h3 class="subtitle has-text-centered" style="font-size: 16px;">
+          Qualitative evaluation on race bias mitigation using SDXL. Each column is generated with the same noise latent. <br> The captions above indicate the base prompt <i>T(c)</i>.
+       </h3>
      </div>
      <div class="item">
-      <!-- Your image here -->
-      <img src="static/images/sdxl-age.jpg" alt="MY ALT TEXT"/>
-      <h2 class="subtitle has-text-centered">
-        Qualitative evaluation on age bias mitigation using SDXL. Each column is generated with the same noise latent. The captions above indicate the base prompt <i>T(c)</i>.
-      </h2>
+      <img src="static/images/sdxl-age.jpg" alt="MY ALT TEXT" class="limited-width-image center-image"/>
+      <h3 class="subtitle has-text-centered" style="font-size: 16px;">
+        Qualitative evaluation on age bias mitigation using SDXL. Each column is generated with the same noise latent. <br> The captions above indicate the base prompt <i>T(c)</i>.
+      </h3>
     </div>
   </div>
 </div>
@@ -216,7 +278,134 @@
           The best KL Divergency results in each category are marked by <strong>bold</strong>. 
           </p>
      </div>
-     <img src="static/images/tab1.png" alt="" class="blend-img-background center-image"/>
+     <!-- <img src="static/images/tab1.png" alt="" class="blend-img-background center-image"/> -->
+    
+     <table>
+      <thead>
+          <tr class="main-header centered">
+              <th rowspan="2" class="centered">Methods</th>
+              <th colspan="3" class="centered">Gender</th>
+              <th colspan="3" class="centered">Race</th>
+              <th colspan="3" class="centered">Age</th>
+          </tr>
+          <tr class="header-row centered">
+              <th class="centered">D<sub>KL</sub> ↓</th>
+              <th class="centered">FID ↓</th>
+              <th class="centered">CLIP ↑</th>
+              <th class="centered">D<sub>KL</sub> ↓</th>
+              <th class="centered">FID ↓</th>
+              <th class="centered">CLIP ↑</th>
+              <th class="centered">D<sub>KL</sub> ↓</th>
+              <th class="centered">FID ↓</th>
+              <th class="centered">CLIP ↑</th>
+          </tr>
+      </thead>
+      <tbody>
+          <tr>
+              <td class="centered">SD1.5 <a href="#">[18]</a></td>
+              <td class="centered">0.3584</td>
+              <td class="centered">281.12</td>
+              <td class="centered">0.2823</td>
+              <td class="centered">0.5973</td>
+              <td class="centered">281.12</td>
+              <td class="centered">0.2823</td>
+              <td class="centered">0.2319</td>
+              <td class="centered">281.12</td>
+              <td class="centered">0.2823</td>
+          </tr>
+          <tr class="section-title centered">
+              <td colspan="10">With attribute specification or prior knowledge on the bias distribution</td>
+          </tr>
+          <tr>
+              <td class="centered">ITI-GEN <a href="#">[24]</a></td>
+              <td class="centered"><b>0.0078</b></td>
+              <td class="centered">278.21</td>
+              <td class="centered">0.2753</td>
+              <td class="centered"><b>0.3699</b></td>
+              <td class="centered">247.05</td>
+              <td class="centered">0.2679</td>
+              <td class="centered"><b>0.1560</b></td>
+              <td class="centered">243.09</td>
+              <td class="centered">0.2648</td>
+          </tr>
+          <tr>
+              <td class="centered">TIME* <a href="#">[15]</a></td>
+              <td class="centered">0.2908</td>
+              <td class="centered">277.79</td>
+              <td class="centered">0.2733</td>
+              <td class="centered">0.5463</td>
+              <td class="centered">270.03</td>
+              <td class="centered">0.2663</td>
+              <td class="centered">0.2285</td>
+              <td class="centered">271.09</td>
+              <td class="centered">0.2738</td>
+          </tr>
+          <tr>
+              <td class="centered">FD* <a href="#">[5]</a></td>
+              <td class="centered">0.2420</td>
+              <td class="centered">278.10</td>
+              <td class="centered">0.2718</td>
+              <td class="centered">0.4987</td>
+              <td class="centered">277.64</td>
+              <td class="centered">0.2738</td>
+              <td class="centered">0.2246</td>
+              <td class="centered">280.33</td>
+              <td class="centered">0.2740</td>
+          </tr>
+          <tr class="section-title centered">
+              <td colspan="10">Without attribute specification</td>
+          </tr>
+          <tr>
+              <td class="centered">EI <a href="#">[1]</a></td>
+              <td class="centered">0.1666</td>
+              <td class="centered">283.52</td>
+              <td class="centered">0.2758</td>
+              <td class="centered">0.6033</td>
+              <td class="centered">281.11</td>
+              <td class="centered">0.2745</td>
+              <td class="centered">0.2258</td>
+              <td class="centered">289.82</td>
+              <td class="centered">0.2773</td>
+          </tr>
+          <tr>
+              <td class="centered">FM <a href="#">[14]</a></td>
+              <td class="centered"><b>0.1174</b></td>
+              <td class="centered">222.82</td>
+              <td class="centered">0.2341</td>
+              <td class="centered">0.3722</td>
+              <td class="centered">220.37</td>
+              <td class="centered">0.2391</td>
+              <td class="centered">0.3823</td>
+              <td class="centered">255.72</td>
+              <td class="centered">0.2402</td>
+          </tr>
+          <tr>
+              <td class="centered">TI <a href="#">[6]</a></td>
+              <td class="centered">0.2590</td>
+              <td class="centered">283.38</td>
+              <td class="centered">0.2777</td>
+              <td class="centered">0.8065</td>
+              <td class="centered">275.32</td>
+              <td class="centered">0.2799</td>
+              <td class="centered">0.3113</td>
+              <td class="centered">286.22</td>
+              <td class="centered">0.2823</td>
+          </tr>
+          <tr>
+              <td class="centered">Ours</td>
+              <td class="centered">0.1298</td>
+              <td class="centered">272.35</td>
+              <td class="centered">0.2789</td>
+              <td class="centered"><b>0.3625</b></td>
+              <td class="centered">277.15</td>
+              <td class="centered">0.2808</td>
+              <td class="centered"><b>0.2168</td>
+              <td class="centered">268.53</td>
+              <td class="centered">0.2798</td>
+          </tr>
+      </tbody>
+  </table>
+
           <p><i>Citation IDs follow the ones in our arXiv paper.</i>
       </div>
    </div>
@@ -232,33 +421,33 @@
       <div id="results-carousel" class="carousel results-carousel">
        <div class="item">
         <!-- Your image here -->
-        <img src="static/images/qualitative_male.jpg" alt="MY ALT TEXT"/>
-        <h2 class="subtitle has-text-centered">
-          Qualitative evaluation on gender bias mitigation. Each column is generated with the same noise latent. The captions above indicate the base prompt <i>T(c)</i>.
-          Visual evaluation on stereotypically male-dominated occupations.
-        </h2>
+        <img src="static/images/qualitative_male.jpg" alt="MY ALT TEXT" class="limited-width-image center-image" />
+        <h3 class="subtitle has-text-centered" style="font-size: 16px;">
+          Qualitative evaluation on gender bias mitigation. Each column is generated with the same noise latent. <br> The captions above indicate the base prompt <i>T(c)</i>.
+          <br> Visual evaluation on stereotypically male-dominated occupations.
+        </h3>
       </div>
       <div class="item">
         <!-- Your image here -->
-        <img src="static/images/qualitative_female.jpg" alt="MY ALT TEXT"/>
-        <h2 class="subtitle has-text-centered">
-          Qualitative evaluation on gender bias mitigation. Each column is generated with the same noise latent. The captions above indicate the base prompt <i>T(c)</i>.
-          Visual evaluation on stereotypically female-dominated occupations.
-        </h2>
+        <img src="static/images/qualitative_female.jpg" alt="MY ALT TEXT" class="limited-width-image center-image"/>
+        <h3 class="subtitle has-text-centered" style="font-size: 16px;">
+          Qualitative evaluation on gender bias mitigation. Each column is generated with the same noise latent. <br> The captions above indicate the base prompt <i>T(c)</i>.
+          <br> Visual evaluation on stereotypically female-dominated occupations.
+        </h3>
       </div>
       <div class="item">
         <!-- Your image here -->
-        <img src="static/images/qualitative_race.jpg" alt="MY ALT TEXT"/>
-        <h2 class="subtitle has-text-centered">
-          Qualitative evaluation on race bias mitigation. Each column is generated with the same noise latent. The captions above indicate the base prompt <i>T(c)</i>.
-       </h2>
+        <img src="static/images/qualitative_race.jpg" alt="MY ALT TEXT" class="limited-width-image center-image"/>
+        <h3 class="subtitle has-text-centered" style="font-size: 16px;">
+          Qualitative evaluation on race bias mitigation. Each column is generated with the same noise latent. <br> The captions above indicate the base prompt <i>T(c)</i>.
+       </h3>
      </div>
      <div class="item">
       <!-- Your image here -->
-      <img src="static/images/qualitative_age.jpg" alt="MY ALT TEXT"/>
-      <h2 class="subtitle has-text-centered">
-        Qualitative evaluation on age bias mitigation. Each column is generated with the same noise latent. The captions above indicate the base prompt <i>T(c)</i>.
-      </h2>
+      <img src="static/images/qualitative_age.jpg" alt="MY ALT TEXT" class="limited-width-image center-image"/>
+      <h3 class="subtitle has-text-centered" style="font-size: 16px;">
+        Qualitative evaluation on age bias mitigation. Each column is generated with the same noise latent. <br> The captions above indicate the base prompt <i>T(c)</i>.
+      </h3>
     </div>
   </div>
 </div>
@@ -273,15 +462,170 @@
       <h2 class="title is-3">Ablation Studies</h2>
       <div class="level-set has-text-justified">
      </div>
-     <p>Ablation studies on proposed components for single-bias mitigation.
-     <img src="static/images/tab2.png" alt="" class="blend-img-background center-image"/>
+     <!-- <img src="static/images/tab2.png" alt="" class="blend-img-background center-image"/> -->
+     <table class="smallTable">
+      <caption>Ablation studies on proposed components for single-bias mitigation.</caption>
+      <thead>
+          <tr class="main-header centered">
+              <th class="centered"><i>L<sub>anchor</sub></i></th>
+              <th class="centered"><i>F<sub>am</sub></i></th>
+              <th class="centered">Gender D<sub>KL</sub> ↓</th>
+              <th class="centered">Race D<sub>KL</sub> ↓</th>
+              <th class="centered">Age D<sub>KL</sub> ↓</th>
+          </tr>
+      </thead>
+      <tbody>
+          <tr>
+              <td class="centered"></td>
+              <td class="centered"></td>
+              <td class="centered">0.2590</td>
+              <td class="centered">0.8065</td>
+              <td class="centered">0.3113</td>
+          </tr>
+          <tr>
+              <td>✔</td>
+              <td class="centered"></td>
+              <td class="centered">0.1822</td>
+              <td class="centered"><b>0.3540</b></td>
+              <td class="centered">0.3999</td>
+          </tr>
+          <tr>
+            <td class="centered"></td>
+            <td class="centered">✔</td>
+            <td class="centered">0.3981</td>
+            <td class="centered">0.8090</td>
+            <td class="centered">0.2581</td>
+          </tr>
+          <tr>
+              <td class="centered">✔</td>
+              <td class="centered">✔</td>
+              <td class="centered"><b>0.1298</b></td>
+              <td class="centered">0.3625</td>
+              <td class="centered"><b>0.2168</b></td>
+          </tr>
+      </tbody>
+  </table>
      </p><br>
-     <p>Performance of combining adaptive inclusive tokens to mitigate multi-biases.
-      <img src="static/images/tab4.png" alt="" class="blend-img-background center-image"/>
+     
+      <!-- <img src="static/images/tab4.png" alt="" class="blend-img-background center-image"/> -->
+      <table class="smallTable2">
+        <caption>Performance of combining adaptive inclusive tokens to mitigate multi-biases.</caption>
+        <thead>
+            <tr class="main-header centered">
+                <th class="centered"><i>&lt;i<sub>g</sub>&gt;</i></th>
+                <th class="centered"><i>&lt;i<sub>r</sub>&gt;</i></th>
+                <th class="centered"><i>&lt;i<sub>a</sub>&gt;</i></th>
+                <th class="centered">Gender D<sub>KL</sub> ↓</th>
+                <th class="centered">Race D<sub>KL</sub> ↓</th>
+                <th class="centered">Age D<sub>KL</sub> ↓</th>
+                <th class="centered">FID ↓</th>
+                <th class="centered">CLIP ↑</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="centered">✔</td>
+                <td class="centered"></td>
+                <td class="centered"></td>
+                <td class="centered">0.3584</td>
+                <td class="centered">0.5973</td>
+                <td class="centered">0.2319</td>
+                <td class="centered">281.12</td>
+                <td class="centered"><b>0.2823</b></td>
+            </tr>
+            <tr>
+                <td class="centered"></td>
+                <td class="centered">✔</td>
+                <td class="centered"></td>
+                <td class="centered">0.1518</td>
+                <td class="centered"><b>0.3141</b></td>
+                <td class="centered">-</td>
+                <td class="centered">270.19</td>
+                <td class="centered">0.2780</td>
+            </tr>
+            <tr>
+                <td class="centered"></td>
+                <td class="centered"></td>
+                <td class="centered">✔</td>
+                <td class="centered">-</td>
+                <td class="centered">0.5691</td>
+                <td class="centered"><b>0.2079</b></td>
+                <td class="centered">267.61</td>
+                <td class="centered">0.2782</td>
+            </tr>
+            <tr>
+                <td class="centered">✔</td>
+                <td class="centered">✔</td>
+                <td class="centered"></td>
+                <td class="centered">0.1568</td>
+                <td class="centered">-</td>
+                <td class="centered">0.2848</td>
+                <td class="centered">263.37</td>
+                <td class="centered">0.2793</td>
+            </tr>
+            <tr>
+                <td class="centered">✔</td>
+                <td class="centered">✔</td>
+                <td class="centered">✔</td>
+                <td class="centered"><b>0.1417</b></td>
+                <td class="centered">0.5932</td>
+                <td class="centered">0.2272</td>
+                <td class="centered"><b>262.95</b></td>
+                <td class="centered">0.2769</td>
+            </tr>
+        </tbody>
+    </table>
      </p> <br>
-     <p>Performance of adaptive inclusive tokens in complex scenes. Reported metrics are on gender bias. 
-      Additional prompts are added to "A photo of a <i>ig</i> {occupation}".
-      <img src="static/images/tab5.png" alt="" class="blend-img-background center-image"/>
+      <!-- <img src="static/images/tab5.png" alt="" class="blend-img-background center-image"/> -->
+      <table class="myTable">
+        <caption>Performance of adaptive inclusive tokens in complex scenes. Reported metrics are on gender bias. Additional prompts are added to "A photo of a <i>ig</i> {occupation}".</caption>
+        <thead>
+            <tr class="main-header centered">
+                <th class="centered">Metrics</th>
+                <th class="centered">D<sub>KL</sub> ↓</th>
+                <th class="centered">FID ↓</th>
+                <th class="centered">CLIP ↑</th>
+                <th class="centered">D<sub>KL</sub> ↓</th>
+                <th class="centered">FID ↓</th>
+                <th class="centered">CLIP ↑</th>
+                <th class="centered">D<sub>KL</sub> ↓</th>
+                <th class="centered">FID ↓</th>
+                <th class="centered">CLIP ↑</th>
+            </tr>
+            <tr class="main-header centered">
+              <th class="centered">Prompts</th>
+              <th class="centered" colspan="3">+ "drinking coffee."</th>
+              <th class="centered" colspan="3">+ "reading a book."</th>
+              <th class="centered" colspan="3">+ "listening to music."</th>
+          </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="centered">SD1.5</td>
+                <td class="centered">0.3567</td>
+                <td class="centered">266.75</td>
+                <td class="centered"><b>0.3116</b></td>
+                <td class="centered">0.3992</td>
+                <td class="centered">326.80</td>
+                <td class="centered"><b>0.3045</b></td>
+                <td class="centered">0.4246</td>
+                <td class="centered"><b>274.67</b></td>
+                <td class="centered"><b>0.3033</b></td>
+            </tr>
+            <tr>
+                <td class="centered">Ours</td>
+                <td class="centered"><b>0.2404</b></td>
+                <td class="centered"><b>264.88</b></td>
+                <td class="centered">0.3082</td>
+                <td class="centered"><b>0.2669</b></td>
+                <td class="centered"><b>312.87</b></td>
+                <td class="centered">0.3020</td>
+                <td class="centered"><b>0.2195</b></td>
+                <td class="centered">275.71</td>
+                <td class="centered">0.3009</td>
+            </tr>
+        </tbody>
+    </table>
       </div>
    </div>
  </div>
