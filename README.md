@@ -7,6 +7,6 @@
     <sup></sup>S-Lab, Nanyang Technological University
 </div>
 
-[Paper]() | [Project Page](https://itsmag11.github.io/aitti/)
+[Paper]() | [Project Page](https://itsmag11.github.io/AITTI/)
 
 Coming soon...
