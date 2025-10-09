@@ -1,7 +1,7 @@
 SEED=666
 export NOTE='race-sd21'
 export MODEL_NAME="stabilityai/stable-diffusion-2-1"
-export DATA_DIR='./data/final-sd15-randseed-race-24x10x6.txt'
+export DATA_DIR='./PATH_TO_DATA'
 
 echo ${NOTE}
 echo ${DATA_DIR}

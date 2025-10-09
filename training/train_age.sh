@@ -1,7 +1,7 @@
 SEED=666
 export NOTE='age'
 export MODEL_NAME="stabilityai/stable-diffusion-2-1"
-export DATA_DIR='./PATH/TO/AGE/DATA/TXT'
+export DATA_DIR='./PATH_TO_DATA'
 
 echo ${NOTE}
 echo ${DATA_DIR}

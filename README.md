@@ -82,9 +82,10 @@ accelerate launch train_aitti.py \
     --pretrained_model_name_or_path "runwayml/stable-diffusion-v1-5" \
     --train_data_dir "./data/gender_balanced_data.txt" \
     --placeholder_token "<gender-diverse>" \
-    --initializer_token "person" \
+    --initializer_token "individual" \
     --resolution 512 \
     --train_batch_size 1 \
+    --repeats 15 \
     --num_train_epochs 1 \
     --learning_rate 5.0e-04 \
     --output_dir "gender-inclusive" \

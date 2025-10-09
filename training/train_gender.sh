@@ -1,15 +1,11 @@
 SEED=666
 export NOTE='gender-person_init'
 export MODEL_NAME="runwayml/stable-diffusion-v1-5"
-export DATA_DIR='./data/filtered-sd15-randseed-gender-24x10x2.txt'
+export DATA_DIR='./PATH_TO_DATA'
 
 echo ${NOTE}
 echo ${DATA_DIR}
 
-export WANDB_MODE=offline
-export HF_HUB_DISABLE_HEAD_REQUESTS=1
-export HF_HUB_OFFLINE=1
-export CUDA_VISIBLE_DEVICES=0
 
 accelerate launch train_aitti.py \
     --report_to="wandb" \
