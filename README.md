@@ -9,6 +9,8 @@
 </div>
 
 [Paper](https://arxiv.org/abs/2406.12805) | [Project Page](https://itsmag11.github.io/AITTI/) | [Supplementary Materials](https://entuedu-my.sharepoint.com/:b:/g/personal/xinyu_hou_staff_main_ntu_edu_sg/EVcLbNo4PYRMkPU3C6av5vcBA3igPLn3eAXG58dpbKwjvw?e=kW8gAK)
+
+**International Journal of Computer Vision**
 </div>
 
 <br>
@@ -148,11 +150,11 @@ python get_average_metrics.py \
 If you use this code in your research, please cite:
 
 ```bibtex
-@article{hou2024aitti,
+@inproceedings{hou2025aitti,
   title={AITTI: Learning Adaptive Inclusive Token for Text-to-Image Generation},
   author={Hou, Xinyu and Li, Xiaoming and Loy, Chen Change},
-  journal={arXiv preprint arXiv:2406.12805},
-  year={2024}
+  booktitle={International Journal of Computer Vision (IJCV)},
+  year={2025}
 }
 ```
 
