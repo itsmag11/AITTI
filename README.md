@@ -103,6 +103,16 @@ accelerate launch train_aitti.py \
 
 ### 3️⃣ Inference
 
+**Released Weights:**
+
+| Token | Hugging Face Link |
+| :--- | :--- |
+| **\<gender-inclusive\>** | [Download](https://huggingface.co/itsmag11/gender-inclusive) |
+| **\<race-inclusive\>** | [Download](https://huggingface.co/itsmag11/race-inclusive) |
+| **\<age-inclusive\>** | [Download](https://huggingface.co/itsmag11/age-inclusive) |
+
+To use these weights, download `adaptive_mapping.safetensors` and `learned_embeds.safetensors` from the link above.
+
 Generate images using trained AITTI models:
 
 **Gender-Inclusive Generation:**
@@ -157,15 +167,4 @@ If you use this code in your research, please cite:
   year={2025}
 }
 ```
-
-
-## 🙏 Acknowledgments
-
-- Built on [Diffusers](https://github.com/huggingface/diffusers) library
-- Uses [CLIP](https://github.com/openai/CLIP) for evaluation
-- Face detection via [FaceXLib](https://github.com/xinntao/facexlib)
-
-## 📧 Contact
-
-For questions or issues, please open an issue on GitHub or contact the authors.
 
