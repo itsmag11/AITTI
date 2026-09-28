@@ -104,6 +104,8 @@ check_min_version("0.22.0.dev0")
 
 logger = get_logger(__name__)
 
+INITIALIZER_TOKEN = "individual"
+
 
 def save_model_card(repo_id: str, images=None, base_model=str, repo_folder=None):
     img_str = ""
@@ -155,12 +157,13 @@ def log_validation(text_encoder, tokenizer, unet, vae, adaptive_mapping, args, a
     pipeline.set_progress_bar_config(disable=True)
 
     # run inference
+    adaptive_mapping.eval()
     generator = None if args.seed is None else torch.Generator(device=accelerator.device).manual_seed(args.seed)
     images = []
     for _ in range(args.num_validation_images):
         with torch.autocast("cuda"):
             image = pipeline(args.validation_prompt, num_inference_steps=25, generator=generator,
-                             profession_name="doctor", token_name=args.placeholder_token_list).images[0]
+                             profession_name="doctor", token_name=args.placeholder_token).images[0]
         images.append(image)
 
     for tracker in accelerator.trackers:
@@ -176,6 +179,7 @@ def log_validation(text_encoder, tokenizer, unet, vae, adaptive_mapping, args, a
                 }
             )
 
+    adaptive_mapping.train()
     del pipeline
     torch.cuda.empty_cache()
     return images
@@ -211,15 +215,9 @@ def parse_args():
         help="Save the complete stable diffusion pipeline.",
     )
     parser.add_argument(
-        "--num_vectors",
-        type=int,
-        default=1,
-        help="How many textual inversion vectors shall be used to learn the concept.",
-    )
-    parser.add_argument(
         "--pretrained_model_name_or_path",
         type=str,
-        default="runwayml/stable-diffusion-v1-5", #"stabilityai/stable-diffusion-2-1",
+        default="stable-diffusion-v1-5/stable-diffusion-v1-5", #"stabilityai/stable-diffusion-2-1",
         help="Path to pretrained model or model identifier from huggingface.co/models.",
     )
     parser.add_argument(
@@ -244,9 +242,6 @@ def parse_args():
         type=str,
         default="<gender-diverse>",
         help="A token to use as a placeholder for the concept.",
-    )
-    parser.add_argument(
-        "--initializer_token", type=str, default=None, help="A token to use as initializer word."
     )
     parser.add_argument("--learnable_property", type=str, default="adjective", help="property of the inverted concept", choices=['object', 'style', 'adjective'])
     parser.add_argument("--repeats", type=int, default=100, help="How many times to repeat the training data.")
@@ -453,10 +448,6 @@ def parse_args():
         action="store_true",
         default=False,
         help="Whether to train adaptive token mapping.")
-    parser.add_argument("--num_transformer_head", type=int, default=6, 
-                        help="number of transformer attention head in adaptive mapping")
-    parser.add_argument("--num_transformer_block", type=int, default=4, 
-                        help="number of transformer block in adaptive mapping")
 
     args = parser.parse_args()
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
@@ -591,8 +582,7 @@ class TextualInversionDataset(Dataset):
             ).input_ids[0]
         
         example['placeholders_mask'] = torch.zeros_like(example["input_ids"]).bool()
-        for single_placeholder_string in placeholder_string.split(' '):
-            example['placeholders_mask'][text.split(' ').index(single_placeholder_string) + 1] = True
+        example['placeholders_mask'][text.split(' ').index(placeholder_string) + 1] = True
         example['concept_mask'] = torch.zeros_like(example["input_ids"]).bool()
         for profession_word in profession.split(' '):
             example['concept_mask'][text.split(' ').index(profession_word) + 1] = True
@@ -716,7 +706,7 @@ def main():
     adaptive_mapping = None
     if args.train_adaptive_token_mapping:
         embed_dim = text_encoder.config.hidden_size
-        adaptive_mapping = AdaptiveTokenMapping_v1(embed_dim, embed_dim, embed_dim, num_heads=args.num_transformer_head, num_layers=args.num_transformer_block)
+        adaptive_mapping = AdaptiveTokenMapping_v1(embed_dim, embed_dim, embed_dim)
 
     ## ----------------------------------------------
     ## PREPARE NEW TOKEN
@@ -724,34 +714,14 @@ def main():
     # Add the placeholder token in tokenizer
     placeholder_tokens = [args.placeholder_token]
 
-    if args.num_vectors < 1:
-        raise ValueError(f"--num_vectors has to be larger or equal to 1, but is {args.num_vectors}")
-
-    # add dummy tokens for multi-vector
-    additional_tokens = []
-    for i in range(1, args.num_vectors):
-        additional_tokens.append(f"{args.placeholder_token}_{i}")
-    placeholder_tokens += additional_tokens
-
     num_added_tokens = tokenizer.add_tokens(placeholder_tokens)
-    if num_added_tokens != args.num_vectors:
+    if num_added_tokens != 1:
         raise ValueError(
             f"The tokenizer already contains the token {args.placeholder_token}. Please pass a different"
             " `placeholder_token` that is not already in the tokenizer."
         )
 
-    if args.initializer_token == 'random_word':
-        initializer_token_id = random.randint(0, len(tokenizer))
-    elif args.initializer_token == 'random_weight':
-        pass
-    else:
-        # Convert the initializer_token, placeholder_token to ids
-        token_ids = tokenizer.encode(args.initializer_token, add_special_tokens=False)
-        # Check if initializer_token is a single token or a sequence of tokens
-        if len(token_ids) > 1:
-            raise ValueError("The initializer token must be a single token.")
-
-        initializer_token_id = token_ids[0]
+    (initializer_token_id,) = tokenizer.encode(INITIALIZER_TOKEN, add_special_tokens=False)
     placeholder_token_ids = tokenizer.convert_tokens_to_ids(placeholder_tokens)
 
     # Resize the token embeddings as we are adding new special tokens to the tokenizer
@@ -759,12 +729,9 @@ def main():
 
     # Initialise the newly added placeholder token with the embeddings of the initializer token
     token_embeds = text_encoder.get_input_embeddings().weight.data ##torch.Size([49409, 1024])
-    if args.initializer_token != 'random_weight':
-        with torch.no_grad():
-            for token_id in placeholder_token_ids:
-                token_embeds[token_id] = token_embeds[initializer_token_id].clone()
-
-    args.placeholder_token_list = (" ".join(tokenizer.convert_ids_to_tokens(placeholder_token_ids)))
+    with torch.no_grad():
+        for token_id in placeholder_token_ids:
+            token_embeds[token_id] = token_embeds[initializer_token_id].clone()
 
     ## ----------------------------------------------
     ## GET READY FOR TRAINING
@@ -827,7 +794,7 @@ def main():
         data_root=args.train_data_dir,
         tokenizer=tokenizer,
         size=args.resolution,
-        placeholder_token=(" ".join(tokenizer.convert_ids_to_tokens(placeholder_token_ids))),
+        placeholder_token=args.placeholder_token,
         repeats=args.repeats,
         learnable_property=args.learnable_property,
         center_crop=args.center_crop,

@@ -68,7 +68,7 @@ if __name__=='__main__':
         'male': 0,
         'female': 1
     }
-    target_class = CLASS_NUM[PROMPT.split(' ')[5]]
+    target_class = next(CLASS_NUM[word] for word in PROMPT.split(' ') if word in CLASS_NUM)
     dir_name = args.output_dir.split('/')[-1]
 
     OUT_DIR = args.output_dir

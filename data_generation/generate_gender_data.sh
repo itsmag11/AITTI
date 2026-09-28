@@ -38,7 +38,6 @@ for profession in "${biased_professions[@]}"; do
         echo ${OUTDIR}
         
         python generate_data.py \
-            --isrun \
             --seed ${SEED} \
             --run_times ${RUNTIME} \
             --num_col ${NUMCOL} \

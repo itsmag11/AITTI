@@ -1,6 +1,6 @@
 SEED=666
 export NOTE='gender-person_init'
-export MODEL_NAME="runwayml/stable-diffusion-v1-5"
+export MODEL_NAME="stable-diffusion-v1-5/stable-diffusion-v1-5"
 export DATA_DIR='./PATH_TO_DATA'
 
 echo ${NOTE}
@@ -12,7 +12,7 @@ accelerate launch train_aitti.py \
     --pretrained_model_name_or_path=$MODEL_NAME \
     --train_data_dir=$DATA_DIR \
     --learnable_property="adjective" \
-    --placeholder_token="<gender-diverse>" --initializer_token="person" \
+    --placeholder_token="<gender-diverse>" \
     --resolution=512 \
     --train_batch_size=1 \
     --repeats=15 \
@@ -26,7 +26,4 @@ accelerate launch train_aitti.py \
     --validation_steps=1000 \
     --anchor_loss 1000000.0 \
     --train_adaptive_token_mapping \
-    --num_transformer_head 6 \
-    --num_transformer_block 4 \
-    --num_vectors 1 \
     --is_run

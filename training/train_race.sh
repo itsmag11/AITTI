@@ -1,6 +1,6 @@
 SEED=666
-export NOTE='race-sd21'
-export MODEL_NAME="stabilityai/stable-diffusion-2-1"
+export NOTE='race'
+export MODEL_NAME="stable-diffusion-v1-5/stable-diffusion-v1-5"
 export DATA_DIR='./PATH_TO_DATA'
 
 echo ${NOTE}
@@ -16,7 +16,7 @@ accelerate launch train_aitti.py \
         --pretrained_model_name_or_path=$MODEL_NAME \
         --train_data_dir=$DATA_DIR \
         --learnable_property="adjective" \
-        --placeholder_token="<race-diverse>" --initializer_token="individual" \
+        --placeholder_token="<race-diverse>" \
         --resolution=512 \
         --train_batch_size=1 \
         --repeats=15 \
@@ -30,7 +30,4 @@ accelerate launch train_aitti.py \
         --validation_steps=1000 \
         --anchor_loss 1000000.0 \
         --train_adaptive_token_mapping \
-        --num_transformer_head 8 \
-        --num_transformer_block 6 \
-        --num_vectors 1 \
         --is_run

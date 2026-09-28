@@ -13,9 +13,15 @@
 # limitations under the License.
 
 import inspect
+import json
+import os
+import re
 from typing import Any, Callable, Dict, List, Optional, Union
 
+import safetensors.torch
 import torch
+from huggingface_hub import hf_hub_download
+from huggingface_hub.utils import EntryNotFoundError
 from packaging import version
 from transformers import CLIPImageProcessor, CLIPTextModel, CLIPTokenizer
 
@@ -65,15 +71,25 @@ class TransformerBlock(nn.Module):
         return x
 
 class AdaptiveTokenMapping_v1(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, num_heads=6, num_layers=1, dropout=0.1, dtype=torch.float16):
+    NUM_HEADS = 6
+    NUM_LAYERS = 4
+
+    def __init__(self, input_size, hidden_size, output_size, dropout=0.1):
         super(AdaptiveTokenMapping_v1, self).__init__()
         self.embedding = nn.Linear(input_size, hidden_size)
         self.transformer_blocks = nn.ModuleList([
-            TransformerBlock(hidden_size, hidden_size, num_heads, dropout) 
-            for _ in range(num_layers)
+            TransformerBlock(hidden_size, hidden_size, self.NUM_HEADS, dropout)
+            for _ in range(self.NUM_LAYERS)
         ])
         self.output_layer = nn.Linear(hidden_size, output_size)
-        self.dtype = dtype
+
+    @property
+    def device(self):
+        return self.output_layer.weight.device
+
+    @property
+    def dtype(self):
+        return self.output_layer.weight.dtype
 
     def forward(self, x):
         x = self.embedding(x)
@@ -83,17 +99,32 @@ class AdaptiveTokenMapping_v1(nn.Module):
         return x
 
 
+AITTI_REPO_ID = "itsmag11/AITTI"
+
+
+def load_adaptive_mapping_state_dict(path):
+    try:
+        return safetensors.torch.load_file(path)
+    except Exception:
+        # Checkpoints written by train_aitti.py are torch pickles despite the .safetensors extension.
+        with open(path, "rb") as f:
+            return torch.load(f, map_location="cpu", weights_only=True)
+
+
 EXAMPLE_DOC_STRING = """
     Examples:
         ```py
         >>> import torch
-        >>> from diffusers import StableDiffusionPipeline
+        >>> from diffusers import DiffusionPipeline
 
-        >>> pipe = StableDiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16)
-        >>> pipe = pipe.to("cuda")
+        >>> pipe = DiffusionPipeline.from_pretrained(
+        ...     "stable-diffusion-v1-5/stable-diffusion-v1-5",
+        ...     custom_pipeline="itsmag11/AITTI",
+        ...     torch_dtype=torch.float16,
+        ... ).to("cuda")
+        >>> pipe.load_aitti("gender")
 
-        >>> prompt = "a photo of an astronaut riding a horse on mars"
-        >>> image = pipe(prompt).images[0]
+        >>> image = pipe("A photo of a <gender-inclusive> doctor").images[0]
         ```
 """
 
@@ -145,7 +176,7 @@ class StableDiffusionAdaptiveTokenPipeline(DiffusionPipeline, TextualInversionLo
             A `CLIPImageProcessor` to extract features from generated images; used as inputs to the `safety_checker`.
     """
     model_cpu_offload_seq = "text_encoder->unet->vae"
-    _optional_components = ["safety_checker", "feature_extractor"]
+    _optional_components = ["safety_checker", "feature_extractor", "adaptive_mapping"]
     _exclude_from_cpu_offload = ["safety_checker"]
 
     def __init__(
@@ -157,7 +188,7 @@ class StableDiffusionAdaptiveTokenPipeline(DiffusionPipeline, TextualInversionLo
         scheduler: KarrasDiffusionSchedulers,
         safety_checker: StableDiffusionSafetyChecker,
         feature_extractor: CLIPImageProcessor,
-        adaptive_mapping: AdaptiveTokenMapping_v1,
+        adaptive_mapping: Optional[AdaptiveTokenMapping_v1] = None,
         requires_safety_checker: bool = True,
     ):
         super().__init__()
@@ -240,6 +271,94 @@ class StableDiffusionAdaptiveTokenPipeline(DiffusionPipeline, TextualInversionLo
         self.image_processor = VaeImageProcessor(vae_scale_factor=self.vae_scale_factor)
         self.use_peft_backend = False  # Add missing use_peft_backend attribute
         self.register_to_config(requires_safety_checker=requires_safety_checker)
+        self.aitti_token = None
+        self.aitti_change_step = 0
+
+    def load_aitti(
+        self,
+        attribute: Optional[str] = None,
+        pretrained_model_name_or_path: str = AITTI_REPO_ID,
+        token: Optional[str] = None,
+        adaptive_mapping_weight_name: str = "adaptive_mapping.safetensors",
+        learned_embeds_weight_name: str = "learned_embeds.safetensors",
+        **hub_kwargs,
+    ) -> str:
+        r"""
+        Load an AITTI inclusive token (adaptive token mapping + learned token embedding) and return the token string.
+
+        Examples:
+            >>> pipe.load_aitti("gender")  # "<gender-inclusive>" from https://huggingface.co/itsmag11/AITTI
+            >>> pipe.load_aitti(pretrained_model_name_or_path="./gender-inclusive", token="<gender-diverse>")  # local training output
+
+        Args:
+            attribute (`str`, *optional*):
+                Sub-folder holding the weights, e.g. `"gender"`, `"race"` or `"age"` for the released tokens.
+            pretrained_model_name_or_path (`str`, defaults to `"itsmag11/AITTI"`):
+                Hugging Face Hub repo id or local directory.
+            token (`str`, *optional*):
+                Token string to register. Defaults to the one in `config.json` or in the learned embedding file.
+            hub_kwargs:
+                Extra arguments forwarded to `huggingface_hub.hf_hub_download` (e.g. `revision`, `cache_dir`).
+        """
+
+        def resolve(filename):
+            if os.path.isdir(pretrained_model_name_or_path):
+                folder = pretrained_model_name_or_path
+                if attribute is not None and os.path.isdir(os.path.join(folder, attribute)):
+                    folder = os.path.join(folder, attribute)
+                path = os.path.join(folder, filename)
+                return path if os.path.isfile(path) else None
+            subpath = filename if attribute is None else f"{attribute}/{filename}"
+            try:
+                return hf_hub_download(pretrained_model_name_or_path, subpath, **hub_kwargs)
+            except EntryNotFoundError:
+                return None
+
+        config = {}
+        config_path = resolve("config.json")
+        if config_path is not None:
+            with open(config_path) as f:
+                config = json.load(f)
+
+        adaptive_mapping_path = resolve(adaptive_mapping_weight_name)
+        learned_embeds_path = resolve(learned_embeds_weight_name)
+        if adaptive_mapping_path is None or learned_embeds_path is None:
+            raise FileNotFoundError(
+                f"Could not find {adaptive_mapping_weight_name} and {learned_embeds_weight_name} in "
+                f"{pretrained_model_name_or_path}" + (f"/{attribute}" if attribute else "")
+            )
+
+        embed_dim = self.text_encoder.config.hidden_size
+        adaptive_mapping = AdaptiveTokenMapping_v1(embed_dim, embed_dim, embed_dim)
+        adaptive_mapping.load_state_dict(load_adaptive_mapping_state_dict(adaptive_mapping_path), strict=True)
+        adaptive_mapping.requires_grad_(False).eval()
+        adaptive_mapping.to(device=self.text_encoder.device, dtype=self.text_encoder.dtype)
+        self.register_modules(adaptive_mapping=adaptive_mapping)
+
+        learned_embeds = safetensors.torch.load_file(learned_embeds_path)
+        token = token or config.get("token") or next(iter(learned_embeds))
+        if token in self.tokenizer.get_vocab():
+            self.unload_textual_inversion(token)
+        self.load_textual_inversion(learned_embeds, token=token)
+        self.aitti_token = token
+        self.aitti_change_step = config.get("change_step", 0)
+        return token
+
+    @staticmethod
+    def _infer_profession_name(prompt: str, token_name: str) -> str:
+        words = prompt.split(" ")
+        start = words.index(token_name) + 1
+        profession_words = []
+        for word in words[start:]:
+            if not re.fullmatch(r"[A-Za-z\-]+", word):
+                break
+            profession_words.append(word)
+        if not profession_words:
+            raise ValueError(
+                f"Could not infer `profession_name` from prompt {prompt!r}; please pass it explicitly, "
+                "e.g. pipe('A photo of a <gender-inclusive> doctor', profession_name='doctor')."
+            )
+        return " ".join(profession_words)
 
     def enable_vae_slicing(self):
         r"""
@@ -302,6 +421,11 @@ class StableDiffusionAdaptiveTokenPipeline(DiffusionPipeline, TextualInversionLo
 
         return prompt_embeds
     
+    @property
+    def clip_text_model(self):
+        # transformers>=5 flattens CLIPTextModel.text_model into CLIPTextModel itself.
+        return getattr(self.text_encoder, "text_model", self.text_encoder)
+
     def get_lookup_embeddings(self, input_ids, inputs_embeds=None):
         if input_ids is None:
             raise ValueError("You have to specify input_ids")
@@ -310,16 +434,16 @@ class StableDiffusionAdaptiveTokenPipeline(DiffusionPipeline, TextualInversionLo
         input_ids = input_ids.view(-1, input_shape[-1])
 
         if inputs_embeds is None:
-            inputs_embeds = self.text_encoder.text_model.embeddings.token_embedding(input_ids)
+            inputs_embeds = self.clip_text_model.embeddings.token_embedding(input_ids)
 
         return inputs_embeds
     
     def add_position_embeddings(self, input_ids, inputs_embeds, position_ids=None):
         seq_length = input_ids.shape[-1] if input_ids is not None else inputs_embeds.shape[-2]
         if position_ids is None:
-            position_ids = self.text_encoder.text_model.embeddings.position_ids[:, :seq_length]
+            position_ids = self.clip_text_model.embeddings.position_ids[:, :seq_length]
 
-        position_embeddings = self.text_encoder.text_model.embeddings.position_embedding(position_ids)
+        position_embeddings = self.clip_text_model.embeddings.position_embedding(position_ids)
         embeddings = inputs_embeds + position_embeddings
         return embeddings
     
@@ -329,28 +453,44 @@ class StableDiffusionAdaptiveTokenPipeline(DiffusionPipeline, TextualInversionLo
                             output_hidden_states = None,
                             return_dict = None):
         input_shape = input_ids.size()
+        text_model = self.clip_text_model
 
-        from transformers.modeling_attn_mask_utils import _create_4d_causal_attention_mask, _prepare_4d_attention_mask
-        # CLIP's text model uses causal mask, prepare it here.
-        # https://github.com/openai/CLIP/blob/cfcffb90e69f37bf2ff1e988237a0fbe41f33c04/clip/model.py#L324
-        causal_attention_mask = _create_4d_causal_attention_mask(
-            input_shape, hidden_states.dtype, device=hidden_states.device
-        )
-        # expand attention_mask
-        if attention_mask is not None:
-            # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
-            attention_mask = _prepare_4d_attention_mask(attention_mask, hidden_states.dtype)
+        if "causal_attention_mask" in inspect.signature(text_model.encoder.forward).parameters:
+            from transformers.modeling_attn_mask_utils import _create_4d_causal_attention_mask, _prepare_4d_attention_mask
+            # CLIP's text model uses causal mask, prepare it here.
+            # https://github.com/openai/CLIP/blob/cfcffb90e69f37bf2ff1e988237a0fbe41f33c04/clip/model.py#L324
+            causal_attention_mask = _create_4d_causal_attention_mask(
+                input_shape, hidden_states.dtype, device=hidden_states.device
+            )
+            # expand attention_mask
+            if attention_mask is not None:
+                # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
+                attention_mask = _prepare_4d_attention_mask(attention_mask, hidden_states.dtype)
 
-        encoder_outputs = self.text_encoder.text_model.encoder(
-            inputs_embeds=hidden_states,
-            attention_mask=attention_mask,
-            causal_attention_mask=causal_attention_mask,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-        )
+            encoder_outputs = text_model.encoder(
+                inputs_embeds=hidden_states,
+                attention_mask=attention_mask,
+                causal_attention_mask=causal_attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+            )
+        else:
+            from transformers.masking_utils import create_causal_mask
+
+            attention_mask = create_causal_mask(
+                config=text_model.config,
+                inputs_embeds=hidden_states,
+                attention_mask=attention_mask,
+                past_key_values=None,
+            )
+            encoder_outputs = text_model.encoder(
+                inputs_embeds=hidden_states,
+                attention_mask=attention_mask,
+                is_causal=True,
+            )
 
         last_hidden_state = encoder_outputs[0]
-        last_hidden_state = self.text_encoder.text_model.final_layer_norm(last_hidden_state)
+        last_hidden_state = text_model.final_layer_norm(last_hidden_state)
 
         return last_hidden_state
 
@@ -399,9 +539,7 @@ class StableDiffusionAdaptiveTokenPipeline(DiffusionPipeline, TextualInversionLo
         """
         ## ---------------------------------------------------------------------------------------------------------
         ## PREPARE PROMPT PAIR FOR SWITCH
-        # print(token_name.split(' ')[0], flush=True)
-        single_token = token_name.split(' ')[0]
-        ori_prompt = prompt.replace(f'{single_token} ', '')
+        ori_prompt = prompt.replace(f'{token_name} ', '')
         inclusive_prompt = prompt
         prompt = [inclusive_prompt, ori_prompt] #'A photo of a male', 'A photo of a female',
                     # f'A photo of an individual {profession_name}', f'A photo of a person {profession_name}', f'A photo of a diverse {profession_name}']
@@ -445,10 +583,8 @@ class StableDiffusionAdaptiveTokenPipeline(DiffusionPipeline, TextualInversionLo
 
           ## ---------------------------------------------------------------------------------------------------------
             ## GET INPUT MASK FOR ADAPTIVE MAPPING
-            placeholder_string = token_name
             placeholders_mask = torch.zeros_like(text_input_ids[0]).bool()
-            for placeholder in placeholder_string.split(' '):
-                placeholders_mask[prompt[0].split(' ').index(placeholder) + 1] = True
+            placeholders_mask[prompt[0].split(' ').index(token_name) + 1] = True
 
             concept_mask = torch.zeros_like(text_input_ids[0]).bool()
             for profession_word in profession_name.split(' '):
@@ -749,7 +885,7 @@ class StableDiffusionAdaptiveTokenPipeline(DiffusionPipeline, TextualInversionLo
         clip_skip: Optional[int] = None,
         profession_name: Optional[str] = None,
         token_name: Optional[str] = None,
-        change_step: int = 0,
+        change_step: Optional[int] = None,
     ):
         r"""
         The call function to the pipeline for generation.
@@ -809,6 +945,13 @@ class StableDiffusionAdaptiveTokenPipeline(DiffusionPipeline, TextualInversionLo
             clip_skip (`int`, *optional*):
                 Number of layers to be skipped from CLIP while computing the prompt embeddings. A value of 1 means that
                 the output of the pre-final layer will be used for computing the prompt embeddings.
+            profession_name (`str`, *optional*):
+                The concept word(s) following the inclusive token, e.g. `"doctor"`. Inferred from the prompt if omitted.
+            token_name (`str`, *optional*):
+                The inclusive token in the prompt. Defaults to the token loaded by `load_aitti`.
+            change_step (`int`, *optional*):
+                Number of initial denoising steps that use the original prompt (without the inclusive token).
+                Defaults to the value in the loaded token's `config.json`, otherwise 0.
 
         Examples:
 
@@ -836,8 +979,17 @@ class StableDiffusionAdaptiveTokenPipeline(DiffusionPipeline, TextualInversionLo
         else:
             batch_size = prompt_embeds.shape[0]
 
-        # device = self._execution_device
-        device = torch.device('cuda')
+        token_name = token_name or self.aitti_token
+        if token_name is None:
+            raise ValueError("Call `pipe.load_aitti(...)` first or pass `token_name`.")
+        if self.adaptive_mapping is None:
+            raise ValueError("No adaptive mapping loaded. Call `pipe.load_aitti(...)` first.")
+        if profession_name is None:
+            profession_name = self._infer_profession_name(prompt, token_name)
+        if change_step is None:
+            change_step = self.aitti_change_step
+
+        device = self._execution_device
         # here `guidance_scale` is defined analog to the guidance weight `w` of equation (2)
         # of the Imagen paper: https://arxiv.org/pdf/2205.11487.pdf . `guidance_scale = 1`
         # corresponds to doing no classifier free guidance.
